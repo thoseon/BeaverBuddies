@@ -15,7 +15,7 @@ namespace BeaverBuddies.Editor
         public int PlayerIndex { get; init; }
     }
 
-    public class StartingLocationPlayer : BaseComponent, IAwakableComponent, IRegisteredComponent, IPersistentEntity, IStartableComponent
+    public class StartingLocationPlayer : BaseComponent, IAwakableComponent, IRegisteredComponent, IPersistentEntity, IInitializableEntity
     {
         public static readonly Color[] PLAYER_COLORS =
         {
@@ -45,7 +45,7 @@ namespace BeaverBuddies.Editor
             }
         }
 
-        public void Start()
+        public void InitializeEntity()
         {
             Plugin.Log($"Start index initialized with PlayerIndex: {PlayerIndex}");
             StartingLocationRenderer renderer = GetComponent<StartingLocationRenderer>();

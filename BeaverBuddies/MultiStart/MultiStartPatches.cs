@@ -26,7 +26,7 @@ namespace BeaverBuddies.MultiStart
 {
 	[ManualMethodOverwrite]
     /*
-     * 4/19/2025
+     * 09/14/2026
         if (_startingLocationService.HasStartingLocation())
         {
             InitialPlacement = _startingLocationService.GetPlacement();
@@ -35,6 +35,7 @@ namespace BeaverBuddies.MultiStart
         _startingBuildingSpawner.Place(InitialPlacement);
         SetCamera();
         _startingLocationService.DeleteStartingLocations();
+        Notify();
      */
     [HarmonyPatch(typeof(StartingBuildingInitializer), nameof(StartingBuildingInitializer.Initialize))]
 	public class StartingBuildingInitializerInitializePatcher
@@ -76,6 +77,7 @@ namespace BeaverBuddies.MultiStart
 			__instance._startingBuildingSpawner._cameraTargeter
 				.CenterCameraOn(startingLocations[0].GetComponent<SelectableObject>());
 			__instance.SetCamera();
+			__instance.Notify();
 
 			// We still delete all starting locations
 			__instance._startingLocationService.DeleteStartingLocations();
