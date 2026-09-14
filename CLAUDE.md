@@ -62,6 +62,22 @@ _decompiled/                    decompiled Timberborn assemblies (local only, no
 
 Dead or parked code, do not extend: `DeterminismPatcher.cs` (never called), `Fixes/SimulationUpdateFix.cs` (commented out), `Fixes/TestingStrategies_Scrap.cs` (not compiled; preserved bisection method), `ReplayConfig.cs` (`[Obsolete]`), `TickWatcherService.cs`.
 
+## Building
+
+Details and troubleshooting: `docs/build-and-test.md`. The short version:
+
+Prerequisites on the build machine:
+- Timberborn installed (Steam or standalone). The build references its `Timberborn_Data\Managed\*.dll` directly and publicizes them.
+- The **Harmony** and **Mod Settings** mods installed, because the build references their DLLs. Steam Workshop: `<steam>\steamapps\workshop\content\1062090\3284904751\` (Harmony) and `...\3283831040\version-1.0\Scripts\` (Mod Settings). mod.io / manual: `Documents\Timberborn\Mods\Harmony_<ver>\` and `Documents\Timberborn\Mods\modsettings-<id>\version-1.0\Scripts\`.
+- .NET SDK 6 or newer (`dotnet --version`; SDK 10 works). Visual Studio or Rider are optional.
+- nuget.org configured as a NuGet source (`dotnet nuget list source`). The repo's `NuGet.Config` only *adds* the BepInEx feed; a machine with no user-level sources fails restore with `NU1101: Unable to find package Microsoft.Build.Utilities.Core`. Fix once with `dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org`.
+
+Steps:
+1. Copy `BeaverBuddies/env.props.windows-template` (or `.unix-template`) to `BeaverBuddies/env.props` (git-ignored; the first build does this copy for you) and set the four paths, each ending in a slash: `TimberbornDataPath`, `DocumentsPath`, `HarmonyPath`, `ModSettingsPath`. A wrong path fails fast with `... property directory not found`.
+2. `dotnet build BeaverBuddies/BeaverBuddies.csproj -c Debug` (or the `.sln`; `-c "Debug Steam"` to include the Steam transport).
+3. The post-build step **deletes and recreates** `<Documents>\Timberborn\Mods\BeaverBuddies\version-1.0\` and copies the output there. Build equals install. To build without touching the mods folder pass `-p:BeaverBuddiesModsPath=<some dir>\`.
+4. Restart the game fully, enable the BeaverBuddies entry with the **folder icon**, disable the Workshop copy. `Player.log` shows `BeaverBuddies vX.Y.Z is loaded!` from `Plugin.cs`.
+
 ## Timberborn API reference
 
 Decompiled Timberborn sources: `_decompiled/`, one folder per assembly, namespaces as subdirectories. Excluded via `.git/info/exclude`. Read-only — never build, edit or stage anything under it.
