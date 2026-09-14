@@ -111,7 +111,7 @@ Symbol names above are grep targets; they survive upstream merges, line numbers 
 
 **Desync** (state diverged)
 - *Missing or incomplete event*: an action ran on one side only, or `Replay()` differs from the original. Grep `Events/` for a `[HarmonyPatch]` on the game method; prefer adding UI-only `BaseComponent` setters to the automation list in `Events/AutomationEvents.cs`. Replay must call the authoritative method, not re-post a UI event.
-- *Non-determinism*: cosmetic code using gameplay RNG, gameplay RNG outside a tick, frame time leaking in, parallel water writes. `DeterminismService.cs`, `Fixes/AnimationFixes.cs`, `Fixes/WaterSourceFix.cs`, `Doc/ClassesWithRandom.txt`, `Doc/Movement.md`.
+- *Non-determinism*: cosmetic code using gameplay RNG, gameplay RNG outside a tick, frame time leaking in, parallel water writes. `DeterminismService.cs`, `Fixes/AnimationFixes.cs`, `Fixes/WaterSourceFix.cs`, `Fixes/WaterSourceStrengthFix.cs`, `Doc/ClassesWithRandom.txt`, `Doc/Movement.md`. The mod patches `Time.time` but **not** `Time.deltaTime`; gameplay code integrating `Time.deltaTime` (spring fade-in, delayed dynamite) is machine-dependent.
 - *Order/timing*: entity created or ticked in a different order; `Adding: <guid> at index` or `Order hash` diverges. `EntityService.Instantiate` patch, `GuidPatcher`. HashSet enumeration order is **ruled out** (see the maintainer's issue log in `DeterminismService.cs`).
 - *Lag-induced*: only with heavy tracing on. Make traces cheaper.
 

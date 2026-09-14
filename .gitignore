@@ -375,3 +375,5 @@ FodyWeavers.xsd
 .DS_Store
 
 /.idea
+
+/crash_logs

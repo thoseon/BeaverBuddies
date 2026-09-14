@@ -83,12 +83,16 @@ Find the first divergent message and match it:
 | `Tick RNG; …` with a gameplay stack, but preceded by rows that are also one-sided | The RNG is a *symptom*. Walk up to the first one-sided row. | Continue below. |
 | `Unknown random called outside of tick` anywhere earlier in either log | **Gameplay RNG outside a tick** treated as cosmetic (fix `4bb4799` pattern). | [determinism.md](determinism.md#rng-gameplay-vs-cosmetic). |
 | `… going to: …`, `… finished pathfinding …`, `Walker … stopping movement`, `Entity … entering …`, `SlotManager adding enterer` | **Movement / animation drift.** Position or rotation differs, so an executor succeeds on one side. | `Doc/Movement.md`, `TEBPatcher` (`DeterminismService.cs` ~948), `Fixes/AnimationFixes.cs`. Try `NO_SMOOTH_ANIMATION`. |
-| `Updating water map columns with hash …` / `Updating moisture levels with hash …` | **Parallel simulation** or a water-state write at the wrong time. | [determinism.md](determinism.md#parallel-simulation), `Fixes/WaterSourceFix.cs`. Try `NO_PARALLEL`. |
+| `Updating N water sources with hash …` differs | **Water source strength or contamination** differs: a frame-time based strength modifier, or a missed regulator/discharge event. | `Fixes/WaterSourceStrengthFix.cs`; `WaterSourceRegulator` entries in the automation list. |
+| `Updating water map columns with hash …` differs while `column counts` and `Updating moisture levels` still match | The simulation's **inputs** changed. Check the `water sources` trace one tick earlier first, then water changes (pumps, discharge), flow limits (floodgates, sluices), and obstacles. The simulation itself is row-partitioned and deterministic regardless of thread count. | [determinism.md](determinism.md#frame-time-timedeltatime), `Fixes/WaterSourceStrengthFix.cs`, `Fixes/WaterSourceFix.cs`. |
+| `Updating moisture levels with hash …` differs first | **Soil moisture** inputs (terrain, barriers) or a real parallel race. | [determinism.md](determinism.md#parallel-simulation). Try `NO_PARALLEL`. |
 | `Marking spots …`, `Spawning: …`, `Trying to spawn …`, `starting to dry out` | Natural-resource reproduction / drying timers (an open item in the maintainer's log). | `DesyncPatches.cs` ~24-120, `DeterminismService.cs:71-76`. |
 | `Adding: <guid> at index N` differs | **Entity creation order / GUID** differs. | `EntityService.Instantiate` patch, `GuidPatcher`. Check for `Duplicate GUID` warnings. |
 | `Generating new GUID` on one side | Something created an entity on one side only. Usually a missing event or a preview object. | [events-and-patches.md](events-and-patches.md), `Fixes/DistrictBuildingsFix.cs`. |
 | Only reproduces with tracing **on** | **Lag-induced.** Heavy tracing stalls a side. `Doc/ToTestV6.md` lists this as known. | Remove or `skipStackTrack` the hot traces; do not trust the trace as the cause. |
 | `Random state mismatch` with tracing off and nothing obvious | Turn tracing on and reproduce. | Step 1. |
+
+Red herring: `Number of threads: N` at load differs between machines (it is `clamp(physicalCores - 1, 3, 8)`). The water and soil simulations partition work by map row and write only their own rows, so the thread count does not change results by itself. Look for an input that differs, not the partitioning.
 
 Also check both logs for `Failed to replay event`, `Could not find entity`, `Warning, replaying events when bucket != 0`, and different `Received map … Hash` values. Any of those explains a desync without further tracing.
 
@@ -139,6 +143,7 @@ What is traced today (message shapes):
 | `WateredNaturalResource.StartDryingOut` | ~199 | `[dead=…] starting to dry out; trigger delay = …` |
 | `SoilMoistureService.UpdateMoistureLevels` | ~226 | `Updating moisture levels with hash XXXXXXXX` |
 | `ThreadSafeWaterMap.Update` | ~251 | `Updating water map columns with hash …`, `… column counts with hash …` |
+| `WaterSourceRegistry.Tick` | end of file | `Updating N water sources with hash …` (no stack) |
 | `TickableEntityBucket.Add` | ~287 | `Adding: <guid> at index n` |
 | `Enterer.Enter` | ~304 | `Entity … entering … (…)` |
 | `SlotManager.AddEnterer` | ~328 | `SlotManager adding enterer …` |
@@ -149,7 +154,7 @@ What is traced today (message shapes):
 
 Commented-out traces worth knowing: `TimeTriggerService.Trigger/Add` (~72, ~88; noisy false positives), `SoilMoistureMap.SetMoistureLevel` (~216; too laggy), `PathFollower.ReachedLastPathCorner` (~363; used in the #200 hunt).
 
-To read the vanilla method you are tracing, decompile the game DLLs with ILSpy (see [timberborn-modding.md](timberborn-modding.md)).
+To read the vanilla method you are tracing, open the decompiled sources in `_decompiled/` (one folder per assembly; see `CLAUDE.md`), or decompile the game DLLs with ILSpy (see [timberborn-modding.md](timberborn-modding.md)).
 
 ## Bisect switches
 

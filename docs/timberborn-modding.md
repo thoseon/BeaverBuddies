@@ -48,7 +48,7 @@ Caution in co-op: dev-mode actions (spawning, instant build) are **not** interce
 
 ## Reading vanilla code
 
-Use [ILSpy](https://github.com/icsharpcode/ilspy) (or dnSpy) on the `Timberborn.*.dll` assemblies in `Managed/`. The `Inspector/` project (`Inspector/Program.cs`) contains ILSpy-based scans that produced the audits in `BeaverBuddies/Doc/` (`ClassesWithRandom.txt`, `ClassesWithHashSets.txt`, `ClassesWithTimeTriggers.txt`, `DerivedClasses.txt`, `ParallelSingletons.txt`, `UIFragments.txt`, `AllEvents.txt`). Re-run or extend those after a game update.
+The repo carries a decompiled snapshot in `_decompiled/` (one folder per assembly, namespaces as subfolders; regenerate with `Export-TimberbornSource.ps1 -Force` after a game update). For anything not in the snapshot, use [ILSpy](https://github.com/icsharpcode/ilspy) (or dnSpy) on the `Timberborn.*.dll` assemblies in `Managed/`. The `Inspector/` project (`Inspector/Program.cs`) contains ILSpy-based scans that produced the audits in `BeaverBuddies/Doc/` (`ClassesWithRandom.txt`, `ClassesWithHashSets.txt`, `ClassesWithTimeTriggers.txt`, `DerivedClasses.txt`, `ParallelSingletons.txt`, `UIFragments.txt`, `AllEvents.txt`). Re-run or extend those after a game update.
 
 The build publicizes the game assemblies, so private members are visible to the mod's code; when you copy a vanilla method into a patch, mark it `[ManualMethodOverwrite]` with the date and original code.
 

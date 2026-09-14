@@ -62,6 +62,7 @@ Comparing this line across host and client logs at the same tick number is the f
 | `Tick RNG; s0 before: …; Last entity: …` | `DeterminismService.cs` ~225 | Trace, Debug only. Gameplay RNG call during a tick. |
 | `Load RNG; s0 before: …` | `DeterminismService.cs` ~197 | Trace, Debug only. RNG call during load. |
 | `Generating new GUID: …` | `DeterminismService.cs` ~816 | Trace, Debug only. |
+| `Updating N water sources with hash …` | `DesyncDetecter/DesyncPatches.cs` | Trace, Debug only. Per-tick snapshot the water simulation consumes; a divergence here precedes a water-map divergence. |
 | `Duplicate GUID … detected, generating new GUID. Attempt #n.` | `DeterminismService.cs` ~860 | Warning after tick 0. Expected occasionally during preload. |
 | `Finishing full tick - this probably is bad!` | `DeterminismService.cs` ~718 | Vanilla forced a full tick outside a save. Investigate what triggered it. |
 

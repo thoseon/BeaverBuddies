@@ -90,6 +90,14 @@ Timberborn's `MovementAnimator.Update` uses wall-clock `Time.time`, which drifts
 
 The chain `Walker → PathFollower → MovementAnimator → AnimatedPathFollower → CharacterModel` and where float drift enters is written up in `BeaverBuddies/Doc/Movement.md`. Read it for any desync whose trace involves `going to:`, `finished pathfinding`, `stopping movement`, `Enterer.Enter`, or `SlotManager`.
 
+## Frame time (`Time.deltaTime`)
+
+`TimeTimePatcher` detours `Time.time` only. **`Time.deltaTime` is untouched**, so any gameplay code that integrates with it advances by a machine-dependent amount per tick. Known case: `WaterDepthStrengthModifier.GetStrengthModifier` fades a spring's strength in with `FadeInSpeed * Time.deltaTime`, once per tick from `WaterSource.Tick`; `WaterSourceRegistry.Tick` snapshots the strength and the parallel water simulation consumes it, so the water map diverges one tick later. Fixed in `Fixes/WaterSourceStrengthFix.cs` by advancing with `ITickService.TickIntervalInSeconds`.
+
+When a trace diverges in a value that is neither random nor movement, grep the decompiled class on the stack for `Time.deltaTime`. The audit of all game assemblies is in [known-issues-and-history.md](known-issues-and-history.md#frame-time-audit-timedeltatime); the open item is delayed dynamite (`UnstableCore.Update`).
+
+The game never reads or sets `Time.fixedDeltaTime`. The mod's animation code uses it as a unit, but do not treat it as the tick length in new code.
+
 ## Parallel simulation
 
 Four Timberborn singletons tick in parallel (`BeaverBuddies/Doc/ParallelSingletons.txt`): `WaterSimulationController`, `WaterRenderer`, `SoilMoistureSimulationController`, `SoilContaminationSimulationController`.

@@ -84,8 +84,27 @@ Code TODOs with risk notes:
 | `7787b1e` | Fix science unlocks for real | `BuildingUnlockedEvent.Replay` fired the UI event `OnToolUnlocked` directly, leaving `ToolUnlockingService._activeLockers` stale. | Call the authoritative service: `Traverse` to `_toolUnlockingService`, `Unlock(tool)` guarded by `IsLocked(tool)`. **Replay must call the real method, not re-post its side effect.** |
 | `934c49c` | Automation (#154) | Dozens of near-identical setter patches needed for logic buildings. | One `UniversalPrefix` + method cache + argument (de)serialisation (`AutomationEvents.cs`); introduced `DoEntityPrefix`. |
 | `d66dd76`, `04d9a2c` | Mechanical fluid pump (#161) | Private `WaterMoverToggle.SetWaterMovement` with two coupled bools. | Hand-written `WaterMoverModeChangedEvent` patching the private method by string name. |
+| (working tree, 2026-09-14) | Fix water-source fade-in desync after rehost | `WaterDepthStrengthModifier.GetStrengthModifier` advances a spring's fade-in with `Time.deltaTime` (real frame time) once per tick; `WaterSourceRegistry` snapshots the result and the water simulation adds that much water, so machines with different frame rates diverge. Trace: `Updating water map columns with hash` differs at tick 3 after every rehost while column counts and moisture still match. | `[ManualMethodOverwrite]` prefix in `Fixes/WaterSourceStrengthFix.cs` advancing the fade by `ITickService.TickIntervalInSeconds`; service bound in `Plugin.cs`; new per-tick trace `Updating N water sources with hash` in `DesyncPatches.cs`. |
 
 Also instructive: `e0d465d` (save overflow, 4 lines in `DeterminismService.cs`), `cf2885e` (Steam overlay join dialog), `7787b1e`'s predecessor `37fc2a3`.
+
+## Frame-time audit (`Time.deltaTime`)
+
+The mod detours `Time.time` but **not** `Time.deltaTime`. A scan of the game assemblies (2026-09-14, Timberborn 1.0) found `Time.deltaTime` in these gameplay-adjacent classes; everything else is animation, particles, or UI:
+
+| Class | Use | Status |
+|---|---|---|
+| `WaterSourceSystem.WaterDepthStrengthModifier` | Fade-in of spring strength; feeds the water simulation. | **Fixed** (`Fixes/WaterSourceStrengthFix.cs`). |
+| `Explosions.UnstableCore.Update` | `_remainingDelayedActivationTime -= Time.deltaTime` then `Activate()`. Delayed dynamite detonates on a frame-time countdown. | **Open.** Likely desync when using delayed detonation; needs a tick-based countdown. |
+| `SlotSystem.SlotManager.UpdateAssignedSlots` | `slot.Update(Time.deltaTime)` for assigned enterers. | Unverified; probably positions models inside buildings (visual). Check `ISlot.Update` before trusting. |
+| `TimeSystem.NonlinearAnimationManager` | Animation time multiplier. | Visual. |
+| `CharacterMovementSystem.MovementAnimator` | Handled by `Fixes/AnimationFixes.cs`. | Fixed earlier. |
+| `WindSystem.WindService._shaderWindStrength` | Shader parameter. | Visual. |
+| `WonderPlanes.*`, `Terraforming.Drill*`, `BotsUpkeep.BotManufactoryAnimationController`, `ForestryEffects.TreeShaker`, `MechanicalSystem.MechanicalNodeTransformHeight`, `WaterBuildings.FloodgateAnimationController`, `BlockObstacles.LayeredBlockObstacleVisualizer`, `WalkingSystem.SwimmingAnimator`, `WorkshopsEffects.ObservatoryAnimator` | Animators and visualizers. | Visual. |
+
+No game assembly reads or sets `Time.fixedDeltaTime`. Do not assume it equals the tick interval; take the interval from `ITickService.TickIntervalInSeconds`.
+
+Regenerate the list after a game update by searching the `Managed` folder's `Timberborn.*.dll` files for the string `get_deltaTime`, then decompiling the hits.
 
 ## Changelog desync entries
 
