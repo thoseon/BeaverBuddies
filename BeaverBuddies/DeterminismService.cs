@@ -628,20 +628,6 @@ namespace BeaverBuddies
         }
     }
 
-    [HarmonyPatch(typeof(RecoveredGoodStackFactory), nameof(RecoveredGoodStackFactory.RandomizeRotation))]
-    public class RecoveredGoodStackFactoryPatcher
-    {
-        static void Prefix()
-        {
-            DeterminismService.SetNonGamePatcherActive(typeof(RecoveredGoodStackFactoryPatcher), true);
-        }
-
-        static void Postfix()
-        {
-            DeterminismService.SetNonGamePatcherActive(typeof(RecoveredGoodStackFactoryPatcher), false);
-        }
-    }
-
     [HarmonyPatch(typeof(LoopingSoundPlayer), nameof(LoopingSoundPlayer.PlayLooping))]
     public class LoopingSoundPlayerPatcher
     {
@@ -685,7 +671,7 @@ namespace BeaverBuddies
     }
 
 
-    [HarmonyPatch(typeof(BeaverTextureSetter), nameof(BeaverTextureSetter.Start))]
+    [HarmonyPatch(typeof(BeaverTextureSetter), nameof(BeaverTextureSetter.InitializeEntity))]
     public class BeaverTextureSetterStartPatcher
     {
         static void Prefix()
@@ -840,35 +826,44 @@ namespace BeaverBuddies
     }
 
 
-    [HarmonyPatch(typeof(EntityService), nameof(EntityService.Instantiate), typeof(Blueprint), typeof(Guid))]
+    [HarmonyPatch(typeof(EntityService), nameof(EntityService.Instantiate), typeof(EntitySetup.Builder))]
     static class EntityComponentInstantiatePatcher
     {
-        static void Prefix(EntityService __instance, Blueprint template, ref Guid id)
+        static void Prefix(EntityService __instance, EntitySetup.Builder entitySetupBuilder)
         {
             if (EventIO.IsNull) return;
 
             var replayService = GetSingleton<ReplayService>();
 
-            // During preloading, a GUID can be generated that already exists in 
-            // the save, so this guards against duplicate GUIDs.
-            // It should not happen repeatedly, but we max out (and error) if it goes
-            // over 100 times.
-            for (int i = 0; i < 100; i++)
+            // Entities restored from a save arrive with their id already set. Fresh
+            // entities would get a (patched, deterministic) Guid.NewGuid() from
+            // EntitySetup.Builder.Build(); generate it here instead so we can guard
+            // against collisions.
+            if (!entitySetupBuilder._id.HasValue)
             {
-                var existingEntity = __instance._entityRegistry.GetEntity(id);
-                if (existingEntity == null) break;
-                string logMessage = $"Duplicate GUID {id} detected, generating new GUID. Attempt #{i}.";
-                if (replayService != null && replayService.TicksSinceLoad > 0)
+                Guid id = Guid.NewGuid();
+                // During preloading, a GUID can be generated that already exists in 
+                // the save, so this guards against duplicate GUIDs.
+                // It should not happen repeatedly, but we max out (and error) if it goes
+                // over 100 times.
+                for (int i = 0; i < 100; i++)
                 {
-                    // We only log a warning if loaded, since we do expect this to happen
-                    // sometimes during preloading.
-                    Plugin.LogWarning(logMessage);
+                    var existingEntity = __instance._entityRegistry.GetEntity(id);
+                    if (existingEntity == null) break;
+                    string logMessage = $"Duplicate GUID {id} detected, generating new GUID. Attempt #{i}.";
+                    if (replayService != null && replayService.TicksSinceLoad > 0)
+                    {
+                        // We only log a warning if loaded, since we do expect this to happen
+                        // sometimes during preloading.
+                        Plugin.LogWarning(logMessage);
+                    }
+                    else
+                    {
+                        Plugin.Log(logMessage);
+                    }
+                    id = Guid.NewGuid();
                 }
-                else
-                {
-                    Plugin.Log(logMessage);
-                }
-                id = Guid.NewGuid();
+                entitySetupBuilder.SetId(id);
             }
             TickingService ts = GetSingleton<TickingService>();
             if (ts != null)
@@ -929,8 +924,8 @@ namespace BeaverBuddies
 
     [ManualMethodOverwrite]
     /*
-    02/08/2026
-    return (float)_ticksPassedToday * _tickService.TickIntervalInSeconds + _secondsPassedThisTick;
+    09/14/2026
+    public float FluidSecondsPassedToday => (float)_ticksPassedToday * _tickService.TickIntervalInSeconds + _tickProgressService.SecondsPassedThisTick;
      */
     [HarmonyPatch(typeof(DayNightCycle), nameof(DayNightCycle.FluidSecondsPassedToday), MethodType.Getter)]
     public class DayNightCycleFluidSecondsPassedTodayPatcher
@@ -984,7 +979,7 @@ namespace BeaverBuddies
                     CharacterRotator rotator = entityComponent.GetComponent<CharacterRotator>();
                     // The CharacterRotator seems to sometimes not be initialized when this is caused, and
                     // therefore something is null, likely _animatedPathFollower.
-                    if (anim != null && rotator != null && rotator.Started && rotator._animatedPathFollower != null)
+                    if (anim != null && rotator != null && rotator._animatedPathFollower != null)
                     {
                         // The time is only use to update the rotation toward a target
                         // (it won't go beyond the target)

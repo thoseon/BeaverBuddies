@@ -63,6 +63,7 @@ After a build, **restart the game fully** (mod DLLs are loaded once per process)
 | `TimberbornDataPath property directory not found` (or Harmony / ModSettings / Documents) | `env.props` path wrong or missing trailing slash, or the mod is not installed. | Fix the path; install the mod. |
 | `CS0246 ... could not be found` for a `Timberborn.*` type after a game update | The game renamed or removed the API. | See "After a Timberborn update" below. |
 | `NETSDK1138: netcoreapp3.1 is out of support` | `Inspector/` in the solution build. | Harmless; build the csproj instead of the sln if it bothers you. |
+| `MissingFieldException: Field not found: System.Collections.Immutable.ImmutableArray`1<...> ... _tickableSingletons` at runtime (game loads fine, save fails on `TickableSingletonService.Load`) | The `System.Collections.Immutable` NuGet version in the csproj differs from the one in `Timberborn_Data\Managed\` (game 1.1 ships 8.0.0.0). The mod folder then loads a second copy and `ImmutableArray<T>` is a different type than the game's field. | Pin the `PackageReference` to the game's assembly version (check with `[System.Reflection.AssemblyName]::GetAssemblyName(<dll>)`), rebuild, restart. Upstream did the same in `84e8270` on the `v1.1` branch. |
 
 Optional `BeaverBuddies/pat.properties` (git-ignored, Airtable token) is embedded as a resource and enables the "Post Bug Report" button. Without it the log says `No access token found. Reporting will be disabled.`
 
@@ -92,7 +93,9 @@ Running two instances on one machine: launch the second copy with a different St
 
 ### After a Timberborn update
 
-- Rebuild; fix compile errors from renamed/removed game APIs (publicized references make these loud).
+- Rebuild; fix compile errors from renamed/removed game APIs (publicized references make these loud). The compiler reports them in **waves**: fixing one batch surfaces the next, so rebuild after each batch until clean.
+- A clean compile is not enough. Harmony resolves patches at startup, and `harmony.PatchAll()` throws (killing the whole mod) when a `[HarmonyPatch(typeof(X), nameof(X.M), typeof(...))]` overload no longer exists or a `Prefix`/`Postfix` names a parameter the game renamed. Neither is a compile error. Check every prefix parameter name against `_decompiled/` (a script that lists `Type.Method` plus bound parameter names and greps the decompiled signature catches this in seconds), and every explicit overload list.
+- The automation list (`Events/AutomationEvents.cs`) resolves methods by name with `GetMethod`; a removed method yields null and a crash in `OverrideMethod`. Compile catches renames only because `nameof` is used.
 - Grep `[ManualMethodOverwrite]` and diff each copied body against the new decompiled method.
 - Check the automation method list (`Events/AutomationEvents.cs` ~95-183) for renamed methods; `No MethodInfo for:` at runtime means a key is stale.
 - Re-run the `ReflectionUtils` probes (`Plugin.cs:87-96`, commented) and `Inspector` scans to refresh the audits in `BeaverBuddies/Doc/`.

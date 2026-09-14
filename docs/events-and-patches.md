@@ -16,9 +16,11 @@ public static bool DoPrefix(Func<ReplayEvent> getEvent)
     if (message == null) return true;                   // patch opted out for this call
     Plugin.Log(message.ToActionString());
     replayService.RecordEvent(message);
-    return EventIO.ShouldPlayPatchedEvents;             // host: true (run now + broadcast); client: false (swallow)
+    return EventIO.ShouldPlayPatchedEvents;             // false for host (QueuePlay) and client (Send): swallow now, run at the tick
 }
 ```
+
+`ShouldPlayPatchedEvents` is `true` only while replaying or for the offline `FileWriteIO`/`FileReadIO` (`UserEventBehavior.Play`). Host and client both swallow the original; the host executes it at the next tick together with the remote events, which is what keeps ordering identical.
 
 `DoEntityPrefix(BaseComponent, Func<string, ReplayEvent>)` (`ReplayEvent.cs:136`) resolves the entity ID first and returns **null → run original unpatched** when the component has no `EntityComponent`. That is how prefab and preview objects are excluded.
 
@@ -69,7 +71,7 @@ class PausableBuildingPausePatcher
 
 Constraint (comment ~90-94): the method must be **UI-only** and live on a **`BaseComponent`**. It is called from `Plugin.StartMod` (`Plugin.cs:118`), not by `PatchAll`.
 
-Covered today: `Chronometer`, `ContaminationSensor`, `DepthSensor`, `FireworkLauncher`, `FlowSensor`, `Gate`, `Indicator`, `Lever`, `Memory`, `PopulationCounter`, `PowerMeter`, `Relay`, `ResourceCounter`, `ScienceCounter`, `Speaker`, `Timer`, `WeatherStation`, plus `Floodgate`, `Valve`, `FillValve`, `WaterSourceRegulator.Open/Close/Automate`, `Clutch.SetMode`.
+Covered today: `Chronometer`, `ContaminationSensor`, `DepthSensor`, `FireworkLauncher`, `FlowSensor`, `Gate`, `Indicator`, `Lever`, `Memory`, `PopulationCounter`, `PowerMeter`, `Relay`, `ResourceCounter`, `ScienceCounter`, `Speaker`, `Timer`, `WeatherStation`, plus `Floodgate`, `ThrottlingValve` (formerly `Valve`), `FillValve`, `WaterSourceRegulator.Open/Close/Automate`, `Clutch.SetMode`. `Relay` inputs use `SetInput(Automator, int)` / `IncreaseInputs` / `RemoveInput`; `Automator` arguments serialise as entity ids.
 
 ## Adding a new event
 
@@ -132,10 +134,8 @@ Generic bases: `BuildingDropdownEvent<Selector>`, `PriorityChangedEvent<T>`.
 | Building | (no event) | `DeleteBuildingFragment.DeleteBuilding` |
 | Water | `FloodgateHeightChangedEvent` | `Floodgate.SetHeightAndSynchronize` |
 | Water | `FloodgateSynchronizedChangedEvent` | `Floodgate.ToggleSynchronization` |
-| Water | `SluicePlainToggleUpdatedEvent` | `SluiceFragment.OnWaterLevelToggleChanged` / `OnAboveContaminationToggleChanged` / `OnBelowContaminationToggleChanged` / `ToggleSynchronization` |
-| Water | `SluiceSliderUpdatedEvent` | `SluiceState.SetBelowContaminationLimit` / `SetAboveContaminationLimit`, `SluiceFragment.ChangeFlow` |
-| Water | `SluiceModeUpdatedEvent` | `SluiceState.SetAuto` / `Open` / `Close` |
-| Water | `WaterInputDepthActionEvent` | `WaterInputDepthFragment.ToggleDepthLimit` / `IncreaseDepth` / `DecreaseDepth` |
+| Water | `WaterInputDepthActionEvent` | `WaterInputPipeDepthFragment.ToggleDepthLimit` / `IncreaseDepth` / `DecreaseDepth` (private, patched by name) |
+| Water | (automation list) | Throttling valves (formerly sluices and `Valve`) are covered by `ThrottlingValve.*AndSynchronize` / `ToggleSynchronization` entries in `Events/AutomationEvents.cs`. The `Sluice*` event classes were removed with the September 2026 game update. |
 | Water | `WaterMoverModeChangedEvent` | `WaterMoverToggle."SetWaterMovement"` (private, by name) |
 | Ziplines | `ZiplineConnectionChangedEvent` | `ZiplineConnectionAddingTool.Connect`, `ZiplineConnectionButtonFactory.RemoveConnection` |
 | Districts | `DefaultWorkerTypeChangedEvent` | `DistrictCenterFragment.SetBeaverWorkerType` / `SetBotWorkerType` |
@@ -209,7 +209,7 @@ Non-Harmony patches: `GameSaverSavePatcher` (MonoMod `Hook`; `GameSaver.Save` ha
 
 `Attributes.cs` defines a marker for any patch whose body is a **copy of vanilla source** (with a dated comment containing the original). These break silently when Timberborn changes the copied method. Sites at the time of writing:
 
-`ReplayService.cs:744`, `DeterminismService.cs:930, 1053`, `Fixes/AnimationFixes.cs:12`, `Events/TimeEvents.cs:33, 86, 120`, `Events/ToolEvents.cs:490`, `Events/EntityUIEvents.cs:794, 893, 1210`, `Connect/ServerHostingUtils.cs:41, 78`, `Editor/MapEditorPatches.cs:127, 187`, `MultiStart/MultiStartPatches.cs:27, 92`.
+`ReplayService.cs:744`, `DeterminismService.cs:930, 1053`, `Fixes/AnimationFixes.cs:12`, `Events/TimeEvents.cs:33, 86, 120`, `Events/ToolEvents.cs:490`, `Events/EntityUIEvents.cs:794, 893`, `Fixes/WaterSourceStrengthFix.cs`, `Connect/ServerHostingUtils.cs:41, 78`, `Editor/MapEditorPatches.cs:127, 187`, `MultiStart/MultiStartPatches.cs:27, 92`.
 
 After every game update: `grep -rn "ManualMethodOverwrite\]"` and diff each body against the new decompiled method.
 

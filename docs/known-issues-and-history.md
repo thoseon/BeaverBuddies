@@ -88,6 +88,27 @@ Code TODOs with risk notes:
 
 Also instructive: `e0d465d` (save overflow, 4 lines in `DeterminismService.cs`), `cf2885e` (Steam overlay join dialog), `7787b1e`'s predecessor `37fc2a3`.
 
+## Port to the 2026-09-14 Timberborn update
+
+Steam build `25096761` renamed or removed these APIs; the mod was ported on `fix/WaterDepthStrengthModifier` (uncommitted at the time of writing):
+
+| Old | New | Mod change |
+|---|---|---|
+| `Sluice`, `SluiceState`, `SluiceFragment` | Removed; the building is now `ThrottlingValve` (+ `ThrottlingValveFragment`, `FlowControllerState`, `StreamGauge`). | Deleted the three `Sluice*Event` classes and ten patches from `Events/EntityUIEvents.cs`; the valve is covered by the automation list. |
+| `Valve` | `ThrottlingValve` (same methods). | Renamed six automation-list entries. |
+| `Relay.SetInputA` / `SetInputB` | `SetInput(Automator, int)`, `IncreaseInputs()`, `RemoveInput(int)`. | Automation-list entries replaced. |
+| `WaterInputDepthFragment`, `WaterInputCoordinates`, `WaterInputSpec.MaxDepth` | `WaterInputPipeDepthFragment` (methods private, take `ClickEvent`), `WaterInputPipeCoordinates`, `WaterInputPipeSpec.MaxDepth`. | Renames in `WaterInputDepthActionEvent` and its patches. |
+| `BuildingPlacer.Place(BlockObjectSpec, Placement, Action<BaseComponent>)` | `Place(EntitySetup.Builder, Placement)`; duplication travels as a `DuplicationInit` init component instead of a placed callback. | `BuildingPlacedEvent.Replay` builds an `EntitySetup.Builder` and adds `DuplicationInit`; prefix reads the template from the builder. |
+| `EntityService.Instantiate(Blueprint, Guid)` | `Instantiate(EntitySetup.Builder)`; id comes from `Builder.Build()`. | GUID-dedupe prefix moved to the builder overload; only fresh builders (no `SetId`) get a generated id. |
+| `CharacterRotator.Started` | Removed; `Initialize(AnimatedPathFollower)` sets the follower. | Null-check the follower only (`TEBPatcher`). |
+| `IStartableComponent.Start()` | Removed. | `StartingLocationPlayer` uses `IInitializableEntity.InitializeEntity()`. |
+| `BeaverTextureSetter.Start` | `InitializeEntity`. | RNG marker retargeted (class is also on the DI blacklist). |
+| `RecoveredGoodStackFactory.RandomizeRotation` | Removed (randomisation lives in `NaturalResourceModelRandomizer`, already blacklisted). | Marker deleted. |
+| `StartingBuildingInitializer.Initialize` | Now also calls `Notify()`. | Added to the multi-start overwrite. |
+| `DayNightCycle.FluidSecondsPassedToday` | Frame part now comes from `_tickProgressService.SecondsPassedThisTick`. | Overwrite unchanged (it drops the frame part); comment refreshed. |
+
+Runtime verification of this port is still outstanding.
+
 ## Frame-time audit (`Time.deltaTime`)
 
 The mod detours `Time.time` but **not** `Time.deltaTime`. A scan of the game assemblies (2026-09-14, Timberborn 1.0) found `Time.deltaTime` in these gameplay-adjacent classes; everything else is animation, particles, or UI:

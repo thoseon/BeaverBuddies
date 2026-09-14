@@ -97,7 +97,7 @@ Snapshot. After a game update: `Export-TimberbornSource.ps1 -Force`.
 1. Tick entry: `TickableBucketService.TickBuckets` is replaced (`ReplayService.cs`, `[ManualMethodOverwrite]`) by `TickingService.TickBuckets` → `TickReplayServiceOrNextBucket` → `ReplayService.DoTick` runs as pseudo-bucket 0.
 2. `DoTick`: flush traces → `ticksSinceLoad++` → server enqueues `HeartbeatEvent` → `DoTickIO` = `ReplayEvents()` + `SendEvents()` → `UpdateSpeed`.
 3. Client gate: `IsReadyToStartTick` waits for `io.HasEventsForTick(tick+1)`.
-4. Interception: `ReplayEvent.DoPrefix` (`Events/ReplayEvent.cs`) records the event and returns `EventIO.ShouldPlayPatchedEvents`: **host `true` (run now + broadcast), client `false` (swallow, wait for echo)**. Returns `true` early when replaying, not loaded, desynced, or the event factory returns null.
+4. Interception: `ReplayEvent.DoPrefix` (`Events/ReplayEvent.cs`) records the event and returns `EventIO.ShouldPlayPatchedEvents`: **`false` on both host and client** (the original call is swallowed; the host queues it for the next tick and broadcasts it, the client sends it and waits for the echo). Only offline `FileWriteIO`/`FileReadIO` (`UserEventBehavior.Play`) run the call immediately. Returns `true` early when replaying, not loaded, desynced, or the event factory returns null.
 5. One `EventIO` per session: `ServerEventIO` (records replays, heartbeats, `QueuePlay`) vs `ClientEventIO` (no record, `Send`). `EventIO.IsNull` = not in co-op; co-op services are bound only when it is non-null (`Plugin.cs`).
 6. Determinism: `ShouldFreezeSeed` decides gameplay vs cosmetic RNG; `Guid.NewGuid` and `Time.time` are patched; `TEBPatcher` snaps position and completes rotation before each entity ticks.
 7. Detection: tracing off → per-event `randomS0Before` check (`ReplayService.cs`); tracing on → server ships trace lists, client diffs them in `VerifyTraces`. Either → `HandleDesync` → dialog, pause, IO reset.
@@ -119,7 +119,7 @@ Symbol names above are grep targets; they survive upstream merges, line numbers 
 
 **Connection**: TCP `TimberNet/TimberServer.cs`, `TimberClient.cs` (3 s timeout, port 25565); Steam `BeaverBuddies/Steam/`; UI `Connect/`. First check both logs show the same map `Hash`.
 
-**Game update broke the mod**: re-export the decompiled sources first (`Export-TimberbornSource.ps1 -Force`) — a stale `_decompiled/` will silently confirm the old API. Then grep `[ManualMethodOverwrite]` (16 sites) and diff against decompiled vanilla; check `No MethodInfo for:` from the automation list.
+**Game update broke the mod**: re-export the decompiled sources first (`Export-TimberbornSource.ps1 -Force`) — a stale `_decompiled/` will silently confirm the old API. Then grep `[ManualMethodOverwrite]` (16 sites) and diff against decompiled vanilla; check `No MethodInfo for:` from the automation list. Compile errors arrive in waves (rebuild after each batch), and a clean compile still misses runtime patch failures: prefix parameter names and explicit `typeof(...)` overload lists must match the new signatures or `PatchAll` throws and the mod never starts. Checklist in `docs/build-and-test.md`.
 
 ## Desync checklist (short form)
 

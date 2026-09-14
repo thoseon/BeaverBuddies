@@ -52,23 +52,14 @@ namespace BeaverBuddies.Events
                 return;
             }
 
-            placer.Place(blockObjectSpec, placement, (targetEntity) => {
-                // This callback is called when the object is created (which right now
-                // is just immediately after placement). If we should duplicate settings
-                // to it, the event will have a duplicationSourceID.
-                DuplicateSettingsIfNeeded(context, targetEntity);
-            });
-        }
-
-        private void DuplicateSettingsIfNeeded(IReplayContext context, BaseComponent targetEntity)
-        {
-            if (string.IsNullOrEmpty(duplicationSourceID)) return;
-
-            var sourceEntity = GetEntityComponent(context, duplicationSourceID);
-            if (sourceEntity == null) return;
-
-            var duplicator = new Duplicator();
-            duplicator.Duplicate(sourceEntity, targetEntity);
+            // Mirror BlockObjectTool.Place: duplication settings travel as an init component.
+            var builder = new EntitySetup.Builder(buildingSpec.Blueprint);
+            var sourceEntity = string.IsNullOrEmpty(duplicationSourceID) ? null : GetEntityComponent(context, duplicationSourceID);
+            if (sourceEntity != null)
+            {
+                builder.AddInitComponent(new DuplicationInit(sourceEntity));
+            }
+            placer.Place(builder, placement);
         }
 
         // Note: This may not catch every possible invalid placement (e.g. if terrain height changes or something)
@@ -119,11 +110,12 @@ namespace BeaverBuddies.Events
     [HarmonyPatch(typeof(BuildingPlacer), nameof(BuildingPlacer.Place))]
     class PlacePatcher
     {
-        static bool Prefix(BlockObjectSpec template, Placement placement, Action<BaseComponent> placedCallback)
+        static bool Prefix(EntitySetup.Builder entitySetupBuilder, Placement placement)
         {
             return ReplayEvent.DoPrefix(() =>
             {
-                string prefabName = ReplayEvent.GetBuildingName(template);
+                var template = entitySetupBuilder.Template;
+                string prefabName = template.HasSpec<TemplateSpec>() ? template.GetSpec<TemplateSpec>().TemplateName : null;
 
                 return new BuildingPlacedEvent()
                 {
@@ -489,18 +481,19 @@ namespace BeaverBuddies.Events
 
     [ManualMethodOverwrite]
     /*
-     * 11/26/2025
+     * 09/14/2026
      * This isn't a real manual method overwrite, but it still needs
-     * to be reviewed when the Timberborn code updates. It makes a strong
-     * assumption that Duplicator.Duplicate is only called by UI events
-     * and that it's the only callback that gets called when a building
-     * is placed (see BuildingPlacedEvent).
+     * to be reviewed when the Timberborn code updates. It assumes that
+     * Duplicator.Duplicate is reached only (a) from the DuplicateSettingsTool
+     * UI action, or (b) from DuplicableInitializer when an entity is created
+     * with a DuplicationInit init component (which BuildingPlacedEvent.Replay
+     * adds, mirroring BlockObjectTool.Place). Path (b) only runs during replay,
+     * so DoPrefix lets it through.
      * Check
-     * * IBlockObjectPlacer.Place: Make sure it's only called with
-     *   a callback that calls this method.
-     * * Duplicator.Duplicate: Make sure it's only called by UI actions.
+     * * Duplicator.Duplicate callers: DuplicableInitializer and DuplicateSettingsTool only.
+     * * BlockObjectTool.Place: duplication is still passed as DuplicationInit.
      * * DuplicateSettingsTool: Make sure this continues not to do anything
-     *   other than other than registering the change so it can be undone and
+     *   other than registering the change so it can be undone and
      *   that undos are still only supported in the map editor.
      */
     [HarmonyPatch(typeof(Duplicator), nameof(Duplicator.Duplicate))]

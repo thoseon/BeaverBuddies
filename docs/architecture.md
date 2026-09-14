@@ -36,9 +36,10 @@ Both are on tick 34 when the building appears. Two ticks (~0.66 s) of client del
 
 Every player action is a Harmony prefix on the game method that performs the action. The prefix builds a `ReplayEvent` and hands it to `ReplayService`. The return value of `DoPrefix` (`Events/ReplayEvent.cs:112`) is the Harmony "run original?" flag:
 
-- Host: `true` – the action runs now *and* is queued for broadcast (`UserEventBehavior.QueuePlay`).
+- Host: `false` – the action is swallowed and queued to play at the next tick, where it is also broadcast (`UserEventBehavior.QueuePlay`). This keeps the host's own actions at the same point in the tick as remote ones.
 - Client: `false` – the action is swallowed and only runs when the Host echoes it back (`UserEventBehavior.Send`).
-- Nested calls during a replay, before load, or after a desync: `true` – behave like vanilla.
+- Offline recording/replay (`FileWriteIO`, `FileReadIO`, `UserEventBehavior.Play`): `true` – runs immediately.
+- Nested calls during a replay, before load, or after a desync: `true` – behave like vanilla. Because the original is swallowed at record time, a patched method that internally calls another patched method never records twice; the nested call only happens during replay, where `IsReplayingEvents` short-circuits.
 
 Full contract and examples: [events-and-patches.md](events-and-patches.md).
 
