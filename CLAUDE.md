@@ -50,6 +50,32 @@ docs/                           this documentation set
 
 Dead or parked code, do not extend: `DeterminismPatcher.cs` (never called), `Fixes/SimulationUpdateFix.cs` (commented out), `Fixes/TestingStrategies_Scrap.cs` (not compiled; preserved bisection method), `ReplayConfig.cs` (`[Obsolete]`), `TickWatcherService.cs`.
 
+## Timberborn API reference
+
+Decompiled Timberborn sources are in `_decompiled/`, one folder per assembly,
+with namespaces mirrored as subdirectories.
+
+**Look things up there. Do not guess Timberborn class names, properties, method
+signatures, or namespaces from memory** — the game is closed-source and not in
+your training data. A plausible-looking identifier that does not exist costs a
+full build-and-restart cycle to discover.
+
+Read-only reference: never build, edit, or stage anything under `_decompiled/`.
+It is excluded via `.git/info/exclude` and must not appear in any diff or commit.
+
+Finding things:
+
+- `BeaverBuddies/Doc/UIFragments.txt` lists every `IEntityPanelFragment`
+  implementation with its fully qualified name. The namespace tells you which
+  assembly folder to open. Start here for any UI-related work.
+- UI controls are reusable fragments and often do not live in the fragment named
+  after the building they appear on. Searching by building name will mislead you.
+- Grep across the export:
+  `Select-String -Path '_decompiled\*\*.cs' -Pattern 'class WonderFragment' -List`
+
+The export is a snapshot. If the game has been updated since it was generated,
+re-run `Export-TimberbornSource.ps1 -Force`.
+
 ## Core flow in ten lines
 
 1. Tick entry: `TickableBucketService.TickBuckets` is replaced (`ReplayService.cs:753`, `[ManualMethodOverwrite]`) by `TickingService.TickBuckets` (710) → `TickReplayServiceOrNextBucket` (685) → `ReplayService.DoTick` (511) runs as pseudo-bucket 0.
