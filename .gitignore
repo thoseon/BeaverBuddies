@@ -373,3 +373,5 @@ FodyWeavers.xsd
 
 # MacOS system temporary files
 .DS_Store
+
+/.idea
