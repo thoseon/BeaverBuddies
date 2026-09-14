@@ -1,0 +1,51 @@
+using Timberborn.AutomationUI;
+using Timberborn.BatchControl;
+using Timberborn.BuildingsUI;
+using Timberborn.ConstructionSitesUI;
+using Timberborn.CoreUI;
+using Timberborn.DwellingSystemUI;
+using Timberborn.EntitySystem;
+using Timberborn.HaulingUI;
+using Timberborn.ReproductionUI;
+using Timberborn.StatusSystemUI;
+
+namespace Timberborn.HousingBatchControl;
+
+internal class HousingBatchControlRowFactory
+{
+	private readonly VisualElementLoader _visualElementLoader;
+
+	private readonly BuildingBatchControlRowItemFactory _buildingBatchControlRowItemFactory;
+
+	private readonly DwellingBatchControlRowItemFactory _dwellingBatchControlRowItemFactory;
+
+	private readonly HaulCandidateBatchControlRowItemFactory _haulCandidateBatchControlRowItemFactory;
+
+	private readonly BreedingPodBatchControlRowItemFactory _breedingPodBatchControlRowItemFactory;
+
+	private readonly StatusBatchControlRowItemFactory _statusBatchControlRowItemFactory;
+
+	private readonly ConstructionSitePriorityBatchControlRowItemFactory _constructionSitePriorityBatchControlRowItemFactory;
+
+	private readonly BreedingPodInventoryBatchControlRowItemFactory _breedingPodInventoryBatchControlRowItemFactory;
+
+	private readonly AutomatableBatchControlRowItemFactory _automatableBatchControlRowItemFactory;
+
+	public HousingBatchControlRowFactory(VisualElementLoader visualElementLoader, BuildingBatchControlRowItemFactory buildingBatchControlRowItemFactory, DwellingBatchControlRowItemFactory dwellingBatchControlRowItemFactory, HaulCandidateBatchControlRowItemFactory haulCandidateBatchControlRowItemFactory, BreedingPodBatchControlRowItemFactory breedingPodBatchControlRowItemFactory, StatusBatchControlRowItemFactory statusBatchControlRowItemFactory, ConstructionSitePriorityBatchControlRowItemFactory constructionSitePriorityBatchControlRowItemFactory, BreedingPodInventoryBatchControlRowItemFactory breedingPodInventoryBatchControlRowItemFactory, AutomatableBatchControlRowItemFactory automatableBatchControlRowItemFactory)
+	{
+		_visualElementLoader = visualElementLoader;
+		_buildingBatchControlRowItemFactory = buildingBatchControlRowItemFactory;
+		_dwellingBatchControlRowItemFactory = dwellingBatchControlRowItemFactory;
+		_haulCandidateBatchControlRowItemFactory = haulCandidateBatchControlRowItemFactory;
+		_breedingPodBatchControlRowItemFactory = breedingPodBatchControlRowItemFactory;
+		_statusBatchControlRowItemFactory = statusBatchControlRowItemFactory;
+		_constructionSitePriorityBatchControlRowItemFactory = constructionSitePriorityBatchControlRowItemFactory;
+		_breedingPodInventoryBatchControlRowItemFactory = breedingPodInventoryBatchControlRowItemFactory;
+		_automatableBatchControlRowItemFactory = automatableBatchControlRowItemFactory;
+	}
+
+	public BatchControlRow Create(EntityComponent entity)
+	{
+		return new BatchControlRow(_visualElementLoader.LoadVisualElement("Game/BatchControl/BatchControlRow"), entity, _buildingBatchControlRowItemFactory.Create(entity), _dwellingBatchControlRowItemFactory.Create(entity), _haulCandidateBatchControlRowItemFactory.Create(entity), _breedingPodBatchControlRowItemFactory.Create(entity), _breedingPodInventoryBatchControlRowItemFactory.Create(entity), _constructionSitePriorityBatchControlRowItemFactory.Create(entity), _automatableBatchControlRowItemFactory.Create(entity), _statusBatchControlRowItemFactory.Create(entity));
+	}
+}

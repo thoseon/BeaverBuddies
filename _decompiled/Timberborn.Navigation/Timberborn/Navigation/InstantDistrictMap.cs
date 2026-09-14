@@ -1,0 +1,9 @@
+namespace Timberborn.Navigation;
+
+internal class InstantDistrictMap : DistrictMap
+{
+	public InstantDistrictMap(InstantRoadNavMeshGraph instantRoadNavMeshGraph, InstantTerrainNavMeshGraph instantTerrainNavMeshGraph, DistrictRoadFlowFieldGenerator districtRoadFlowFieldGenerator, RoadSpillFlowFieldGenerator roadSpillFlowFieldGenerator, NavigationDistance navigationDistance, InstantDistrictObstacleService instantDistrictObstacleService)
+		: base(instantRoadNavMeshGraph, instantTerrainNavMeshGraph, districtRoadFlowFieldGenerator, roadSpillFlowFieldGenerator, navigationDistance, instantDistrictObstacleService)
+	{
+	}
+}

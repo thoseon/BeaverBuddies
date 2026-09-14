@@ -1,0 +1,3 @@
+namespace Timberborn.AutomationBuildings;
+
+public record IndicatorPinnedModeChangedEvent;

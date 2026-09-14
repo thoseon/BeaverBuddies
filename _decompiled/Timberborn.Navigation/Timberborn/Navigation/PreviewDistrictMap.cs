@@ -1,0 +1,9 @@
+namespace Timberborn.Navigation;
+
+internal class PreviewDistrictMap : DistrictMap
+{
+	public PreviewDistrictMap(PreviewRoadNavMeshGraph previewRoadNavMeshGraph, PreviewTerrainNavMeshGraph previewTerrainNavMeshGraph, DistrictRoadFlowFieldGenerator districtRoadFlowFieldGenerator, RoadSpillFlowFieldGenerator roadSpillFlowFieldGenerator, NavigationDistance navigationDistance, PreviewDistrictObstacleService previewDistrictObstacleService)
+		: base(previewRoadNavMeshGraph, previewTerrainNavMeshGraph, districtRoadFlowFieldGenerator, roadSpillFlowFieldGenerator, navigationDistance, previewDistrictObstacleService)
+	{
+	}
+}

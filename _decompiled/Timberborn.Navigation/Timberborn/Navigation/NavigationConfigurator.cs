@@ -1,0 +1,78 @@
+using Bindito.Core;
+
+namespace Timberborn.Navigation;
+
+[Context("Game")]
+internal class NavigationConfigurator : Configurator
+{
+	protected override void Configure()
+	{
+		Bind<Accessible>().AsTransient();
+		Bind<INavigationService>().To<NavigationService>().AsSingleton();
+		Bind<INavMeshService>().To<NavMeshService>().AsSingleton();
+		Bind<INavigationCachingService>().To<NavigationCachingService>().AsSingleton();
+		Bind<INavigationDebuggingService>().To<NavigationDebuggingService>().AsSingleton();
+		Bind<INavMeshDrawer>().To<NavMeshDrawer>().AsSingleton();
+		Bind<PathfindingService>().AsSingleton();
+		Bind<NodeIdService>().AsSingleton();
+		Bind<HeuristicsCalculator>().AsSingleton();
+		Bind<NavMeshUpdater>().AsSingleton();
+		Bind<NavMeshPositionService>().AsSingleton();
+		Bind<DistanceCalculator>().AsSingleton();
+		Bind<GlobalReachabilityService>().AsSingleton();
+		Bind<INavMeshObjectFactory>().To<NavMeshObjectFactory>().AsSingleton();
+		Bind<NavMeshChangeFactory>().AsSingleton();
+		Bind<NavMeshUpdateNotifier>().AsSingleton();
+		Bind<NavMeshUpdateBuilderFactory>().AsSingleton();
+		Bind<NavMeshListenerSingletonRegistry>().AsSingleton();
+		Bind<INavMeshListenerEntityRegistry>().To<NavMeshListenerEntityRegistry>().AsSingleton();
+		Bind<NavigationDistance>().AsSingleton();
+		Bind<INavigationRangeService>().To<NavigationRangeService>().AsSingleton();
+		Bind<BinaryHeapFactory>().AsSingleton();
+		Bind<FlowFieldPathFinder>().AsSingleton();
+		Bind<FlowFieldPathBuilder>().AsSingleton();
+		Bind<FlowFieldPathTransformer>().AsSingleton();
+		Bind<NavigationSynchronizer>().AsSingleton();
+		Bind<INavigationPhase>().ToExisting<NavigationSynchronizer>();
+		Bind<RestrictedNodeMap>().AsSingleton();
+		Bind<RestrictedNodeUpdater>().AsSingleton();
+		Bind<NavMeshGroupService>().AsSingleton();
+		Bind<TerrainNavMeshSource>().AsSingleton();
+		Bind<TerrainNavMeshGraph>().AsSingleton();
+		Bind<PreviewTerrainNavMeshSource>().AsSingleton();
+		Bind<PreviewTerrainNavMeshGraph>().AsSingleton();
+		Bind<InstantTerrainNavMeshSource>().AsSingleton();
+		Bind<InstantTerrainNavMeshGraph>().AsSingleton();
+		Bind<TerrainFlowFieldCache>().AsSingleton();
+		Bind<TerrainFlowFieldGenerator>().AsSingleton();
+		Bind<TerrainAStarPathfinder>().AsSingleton();
+		Bind<TerrainNavigationRangeService>().AsSingleton();
+		Bind<TerrainReachabilityService>().AsSingleton();
+		Bind<RoadNavMeshSource>().AsSingleton();
+		Bind<RoadNavMeshGraph>().AsSingleton();
+		Bind<PreviewRoadNavMeshSource>().AsSingleton();
+		Bind<PreviewRoadNavMeshGraph>().AsSingleton();
+		Bind<InstantRoadNavMeshSource>().AsSingleton();
+		Bind<InstantRoadNavMeshGraph>().AsSingleton();
+		Bind<RoadFlowFieldCache>().AsSingleton();
+		Bind<RoadFlowFieldGenerator>().AsSingleton();
+		Bind<RoadAStarPathfinder>().AsSingleton();
+		Bind<RoadNavigationRangeService>().AsSingleton();
+		Bind<DistrictRoadFlowFieldGenerator>().AsSingleton();
+		Bind<RoadReachabilityService>().AsSingleton();
+		Bind<RoadSpillFlowFieldGenerator>().AsSingleton();
+		Bind<RoadSpillNavigationRangeService>().AsSingleton();
+		Bind<IDistrictService>().To<DistrictService>().AsSingleton();
+		Bind<DistrictUpdater>().AsSingleton();
+		Bind<DistrictConflictDetector>().AsSingleton();
+		Bind<DistrictNavMeshListener>().AsSingleton();
+		Bind<DistrictMap>().AsSingleton();
+		Bind<DistrictObstacleService>().AsSingleton();
+		Bind<InstantDistrictMap>().AsSingleton();
+		Bind<InstantDistrictObstacleService>().AsSingleton();
+		Bind<PreviewDistrictMap>().AsSingleton();
+		Bind<PreviewDistrictObstacleService>().AsSingleton();
+		Bind<DistrictRandomDestinationPicker>().AsSingleton();
+		Bind<GateConflictDetector>().AsSingleton();
+	}
+}

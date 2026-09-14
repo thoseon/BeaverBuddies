@@ -1,0 +1,48 @@
+using Timberborn.AutomationUI;
+using Timberborn.BatchControl;
+using Timberborn.BuildingsUI;
+using Timberborn.ConstructionSitesUI;
+using Timberborn.CoreUI;
+using Timberborn.EntitySystem;
+using Timberborn.HaulingUI;
+using Timberborn.StatusSystemUI;
+using Timberborn.StockpilePriorityUISystem;
+using Timberborn.StockpilesUI;
+
+namespace Timberborn.StorageBatchControl;
+
+internal class StorageBatchControlRowFactory
+{
+	private readonly VisualElementLoader _visualElementLoader;
+
+	private readonly BuildingBatchControlRowItemFactory _buildingBatchControlRowItemFactory;
+
+	private readonly ConstructionSitePriorityBatchControlRowItemFactory _constructionSitePriorityBatchControlRowItemFactory;
+
+	private readonly StockpileBatchControlRowItemFactory _stockpileBatchControlRowItemFactory;
+
+	private readonly HaulCandidateBatchControlRowItemFactory _haulCandidateBatchControlRowItemFactory;
+
+	private readonly StockpilePriorityBatchControlRowItemFactory _stockpilePriorityBatchControlRowItemFactory;
+
+	private readonly AutomatableBatchControlRowItemFactory _automatableBatchControlRowItemFactory;
+
+	private readonly StatusBatchControlRowItemFactory _statusBatchControlRowItemFactory;
+
+	public StorageBatchControlRowFactory(VisualElementLoader visualElementLoader, BuildingBatchControlRowItemFactory buildingBatchControlRowItemFactory, ConstructionSitePriorityBatchControlRowItemFactory constructionSitePriorityBatchControlRowItemFactory, StockpileBatchControlRowItemFactory stockpileBatchControlRowItemFactory, HaulCandidateBatchControlRowItemFactory haulCandidateBatchControlRowItemFactory, StatusBatchControlRowItemFactory statusBatchControlRowItemFactory, StockpilePriorityBatchControlRowItemFactory stockpilePriorityBatchControlRowItemFactory, AutomatableBatchControlRowItemFactory automatableBatchControlRowItemFactory)
+	{
+		_visualElementLoader = visualElementLoader;
+		_buildingBatchControlRowItemFactory = buildingBatchControlRowItemFactory;
+		_stockpileBatchControlRowItemFactory = stockpileBatchControlRowItemFactory;
+		_constructionSitePriorityBatchControlRowItemFactory = constructionSitePriorityBatchControlRowItemFactory;
+		_haulCandidateBatchControlRowItemFactory = haulCandidateBatchControlRowItemFactory;
+		_statusBatchControlRowItemFactory = statusBatchControlRowItemFactory;
+		_stockpilePriorityBatchControlRowItemFactory = stockpilePriorityBatchControlRowItemFactory;
+		_automatableBatchControlRowItemFactory = automatableBatchControlRowItemFactory;
+	}
+
+	public BatchControlRow Create(EntityComponent entity)
+	{
+		return new BatchControlRow(_visualElementLoader.LoadVisualElement("Game/BatchControl/BatchControlRow"), entity, _buildingBatchControlRowItemFactory.Create(entity), _stockpileBatchControlRowItemFactory.Create(entity), _haulCandidateBatchControlRowItemFactory.Create(entity), _stockpilePriorityBatchControlRowItemFactory.Create(entity), _constructionSitePriorityBatchControlRowItemFactory.Create(entity), _automatableBatchControlRowItemFactory.Create(entity), _statusBatchControlRowItemFactory.Create(entity));
+	}
+}

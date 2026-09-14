@@ -1,0 +1,50 @@
+using Timberborn.AutomationUI;
+using Timberborn.BatchControl;
+using Timberborn.BuildingsUI;
+using Timberborn.CoreUI;
+using Timberborn.EntitySystem;
+using Timberborn.HaulingUI;
+using Timberborn.MechanicalSystem;
+using Timberborn.MechanicalSystemUI;
+using Timberborn.StatusSystemUI;
+
+namespace Timberborn.PowerBatchControl;
+
+internal class MechanicalBatchControlRowFactory
+{
+	private readonly VisualElementLoader _visualElementLoader;
+
+	private readonly BuildingBatchControlRowItemFactory _buildingBatchControlRowItemFactory;
+
+	private readonly StatusBatchControlRowItemFactory _statusBatchControlRowItemFactory;
+
+	private readonly MechanicalBatchControlRowItemFactory _mechanicalBatchControlRowItemFactory;
+
+	private readonly BatteryBatchControlRowItemFactory _batteryBatchControlRowItemFactory;
+
+	private readonly HaulCandidateBatchControlRowItemFactory _haulCandidateBatchControlRowItemFactory;
+
+	private readonly AutomatableBatchControlRowItemFactory _automatableBatchControlRowItemFactory;
+
+	public MechanicalBatchControlRowFactory(VisualElementLoader visualElementLoader, BuildingBatchControlRowItemFactory buildingBatchControlRowItemFactory, StatusBatchControlRowItemFactory statusBatchControlRowItemFactory, MechanicalBatchControlRowItemFactory mechanicalBatchControlRowItemFactory, BatteryBatchControlRowItemFactory batteryBatchControlRowItemFactory, HaulCandidateBatchControlRowItemFactory haulCandidateBatchControlRowItemFactory, AutomatableBatchControlRowItemFactory automatableBatchControlRowItemFactory)
+	{
+		_visualElementLoader = visualElementLoader;
+		_buildingBatchControlRowItemFactory = buildingBatchControlRowItemFactory;
+		_statusBatchControlRowItemFactory = statusBatchControlRowItemFactory;
+		_mechanicalBatchControlRowItemFactory = mechanicalBatchControlRowItemFactory;
+		_batteryBatchControlRowItemFactory = batteryBatchControlRowItemFactory;
+		_haulCandidateBatchControlRowItemFactory = haulCandidateBatchControlRowItemFactory;
+		_automatableBatchControlRowItemFactory = automatableBatchControlRowItemFactory;
+	}
+
+	public BatchControlRow Create(EntityComponent entity)
+	{
+		return new BatchControlRow(_visualElementLoader.LoadVisualElement("Game/BatchControl/BatchControlRow"), entity, _buildingBatchControlRowItemFactory.Create(entity), _mechanicalBatchControlRowItemFactory.Create(entity), _haulCandidateBatchControlRowItemFactory.Create(entity), _batteryBatchControlRowItemFactory.Create(entity), _automatableBatchControlRowItemFactory.Create(entity), _statusBatchControlRowItemFactory.Create(entity));
+	}
+
+	public BatchControlRow Create(MechanicalGraph mechanicalGraph)
+	{
+		string elementName = "Game/BatchControl/BatchControlHeaderRow";
+		return new BatchControlRow(_visualElementLoader.LoadVisualElement(elementName), _mechanicalBatchControlRowItemFactory.Create(mechanicalGraph));
+	}
+}

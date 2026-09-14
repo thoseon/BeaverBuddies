@@ -1,0 +1,43 @@
+using Timberborn.BatchControl;
+using Timberborn.BeaversUI;
+using Timberborn.CharactersUI;
+using Timberborn.CoreUI;
+using Timberborn.DeteriorationSystemUI;
+using Timberborn.EntitySystem;
+using Timberborn.StatusSystemUI;
+using Timberborn.WellbeingUI;
+
+namespace Timberborn.CharactersBatchControl;
+
+internal class CharacterBatchControlRowFactory
+{
+	private readonly VisualElementLoader _visualElementLoader;
+
+	private readonly CharacterBatchControlRowItemFactory _characterBatchControlRowItemFactory;
+
+	private readonly BeaverBuildingsBatchControlRowItemFactory _beaverBuildingsBatchControlRowItemFactory;
+
+	private readonly DeteriorableBatchControlRowItemFactory _deteriorableBatchControlRowItemFactory;
+
+	private readonly AdulthoodBatchControlRowItemFactory _adulthoodBatchControlRowItemFactory;
+
+	private readonly WellbeingBatchControlRowItemFactory _wellbeingBatchControlRowItemFactory;
+
+	private readonly StatusBatchControlRowItemFactory _statusBatchControlRowItemFactory;
+
+	public CharacterBatchControlRowFactory(VisualElementLoader visualElementLoader, CharacterBatchControlRowItemFactory characterBatchControlRowItemFactory, BeaverBuildingsBatchControlRowItemFactory beaverBuildingsBatchControlRowItemFactory, DeteriorableBatchControlRowItemFactory deteriorableBatchControlRowItemFactory, AdulthoodBatchControlRowItemFactory adulthoodBatchControlRowItemFactory, WellbeingBatchControlRowItemFactory wellbeingBatchControlRowItemFactory, StatusBatchControlRowItemFactory statusBatchControlRowItemFactory)
+	{
+		_visualElementLoader = visualElementLoader;
+		_characterBatchControlRowItemFactory = characterBatchControlRowItemFactory;
+		_beaverBuildingsBatchControlRowItemFactory = beaverBuildingsBatchControlRowItemFactory;
+		_deteriorableBatchControlRowItemFactory = deteriorableBatchControlRowItemFactory;
+		_adulthoodBatchControlRowItemFactory = adulthoodBatchControlRowItemFactory;
+		_wellbeingBatchControlRowItemFactory = wellbeingBatchControlRowItemFactory;
+		_statusBatchControlRowItemFactory = statusBatchControlRowItemFactory;
+	}
+
+	public BatchControlRow Create(EntityComponent entity)
+	{
+		return new BatchControlRow(_visualElementLoader.LoadVisualElement("Game/BatchControl/BatchControlRow"), entity, _characterBatchControlRowItemFactory.Create(entity), _beaverBuildingsBatchControlRowItemFactory.Create(entity), _deteriorableBatchControlRowItemFactory.Create(entity), _adulthoodBatchControlRowItemFactory.Create(entity), _wellbeingBatchControlRowItemFactory.Create(entity), _statusBatchControlRowItemFactory.Create(entity));
+	}
+}
