@@ -4,10 +4,12 @@ using Timberborn.BehaviorSystem;
 using Timberborn.BlockSystem;
 using Timberborn.EnterableSystem;
 using Timberborn.EntitySystem;
+using Timberborn.GameDistricts;
 using Timberborn.NaturalResources;
 using Timberborn.NaturalResourcesModelSystem;
 using Timberborn.NaturalResourcesMoisture;
 using Timberborn.NaturalResourcesReproduction;
+using Timberborn.Navigation;
 using Timberborn.ReservableSystem;
 using Timberborn.SlotSystem;
 using Timberborn.SoilMoistureSystem;
@@ -396,6 +398,40 @@ namespace BeaverBuddies.DesyncDetecter
                 hash = (hash * 7) + BitConverter.SingleToInt32Bits(source.Contamination);
             }
             DesyncDetecterService.Trace($"Updating {sources.Count} water sources with hash {hash:X8}", true, true);
+        }
+    }
+
+    // Instant nav mesh / district changes are applied per frame (LateUpdate),
+    // see Fixes/InstantNavMeshFix.cs. The position of this trace in the
+    // per-tick list must be identical on both sides; if it moves relative to
+    // the "going to:" traces, one side's buckets saw the change earlier.
+    [HarmonyPatch(typeof(NavigationSynchronizer), "ProcessInstantChanges")]
+    public class NavigationSynchronizerProcessInstantChangesPatcher
+    {
+        static void Prefix(NavigationSynchronizer __instance)
+        {
+            if (!Settings.Debug) return;
+            if (!ReplayService.IsLoaded) return;
+            var navMeshUpdater = __instance._navMeshUpdater;
+            int terrain = navMeshUpdater._enqueuedInstantTerrainChanges.Count;
+            int road = navMeshUpdater._enqueuedInstantRoadChanges.Count;
+            int district = __instance._districtUpdater._enqueuedInstantChanges.Count;
+            if (terrain == 0 && road == 0 && district == 0) return;
+            DesyncDetecterService.Trace($"Applying instant navmesh changes: {terrain} terrain, {road} road, {district} district", true, true);
+        }
+    }
+
+    // Rare and cheap; marks a beaver becoming stranded (cut off from its
+    // district), which is what a nav mesh timing desync ends in.
+    [HarmonyPatch(typeof(Citizen), "UnassignDistrict")]
+    public class CitizenUnassignDistrictPatcher
+    {
+        static void Prefix(Citizen __instance)
+        {
+            if (!Settings.Debug) return;
+            if (!ReplayService.IsLoaded) return;
+            if (!__instance.HasAssignedDistrict) return;
+            DesyncDetecterService.Trace($"Citizen {__instance.GetComponent<EntityComponent>().EntityId} unassigned from district", true, true);
         }
     }
 }
