@@ -98,6 +98,10 @@ When a trace diverges in a value that is neither random nor movement, grep the d
 
 The game never reads or sets `Time.fixedDeltaTime`. The mod's animation code uses it as a unit, but do not treat it as the tick length in new code.
 
+## Frame-based nav mesh updates
+
+Timberborn keeps a "regular" nav mesh/district map (updated in `NavigationSynchronizer.Tick()`, deterministic) and an "instant" one (updated in `NavigationSynchronizer.LateUpdateSingleton()`, once per rendered frame, listeners notified there too). Gameplay reads the instant copy in `Walker.PathIsTooFarFromDistrict`, `Citizen.UnassignDistrictIfCutOff` (via `GlobalReachabilityService`), `ReachableConstructionSite`, `ReachableDemolishable`, `RecoveredGoodStackAccessible` and the `IInstantNavMeshListener`s in `Timberborn.GameDistricts`. Because entity buckets are spread over frames, `Fixes/InstantNavMeshFix.cs` applies the instant changes at the start of every bucket as well; the per-frame call stays so previews update while paused. In Debug, `Applying instant navmesh changes: …` traces each application.
+
 ## Parallel simulation
 
 Four Timberborn singletons tick in parallel (`BeaverBuddies/Doc/ParallelSingletons.txt`): `WaterSimulationController`, `WaterRenderer`, `SoilMoistureSimulationController`, `SoilContaminationSimulationController`.
