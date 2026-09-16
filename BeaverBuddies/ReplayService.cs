@@ -142,6 +142,12 @@ namespace BeaverBuddies
             IsLoaded = false;
             IsReplayingEvents = false;
             isReset = true;
+            // TimeTimePatcher.time is static and only written through the
+            // ticksSinceLoad setter; a new ReplayService starts at 0 without
+            // calling it, so the patched Time.time would keep the previous
+            // game's value until tick 1 and MovementAnimator would build its
+            // load-time path corners from stale time (beavers fly off the map).
+            TimeTimePatcher.SetTicksSinceLoaded(0);
         }
 
         public ReplayService(

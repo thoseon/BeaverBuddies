@@ -45,7 +45,7 @@ Reproduced with annotations. Keep the source comment as the canonical copy and u
 From `BeaverBuddies/Doc/ToTestV6.md`:
 - 3D water and wonders may have new UI to sync.
 - Parallelism of the new water logic.
-- Index-out-of-bounds with swimming beavers.
+- Index-out-of-bounds with swimming beavers. **Fixed 2026-09-16**: stale patched `Time.time` after an in-process reload (see the reference-fix table).
 - `WaterObjectService` update moved to tick; watch for desyncs.
 - **Desyncs from lag** (reproducible with heavy tracing).
 - Auto-host last map; auto-join testing.
@@ -85,6 +85,7 @@ Code TODOs with risk notes:
 | `934c49c` | Automation (#154) | Dozens of near-identical setter patches needed for logic buildings. | One `UniversalPrefix` + method cache + argument (de)serialisation (`AutomationEvents.cs`); introduced `DoEntityPrefix`. |
 | `d66dd76`, `04d9a2c` | Mechanical fluid pump (#161) | Private `WaterMoverToggle.SetWaterMovement` with two coupled bools. | Hand-written `WaterMoverModeChangedEvent` patching the private method by string name. |
 | (working tree, 2026-09-14) | Fix water-source fade-in desync after rehost | `WaterDepthStrengthModifier.GetStrengthModifier` advances a spring's fade-in with `Time.deltaTime` (real frame time) once per tick; `WaterSourceRegistry` snapshots the result and the water simulation adds that much water, so machines with different frame rates diverge. Trace: `Updating water map columns with hash` differs at tick 3 after every rehost while column counts and moisture still match. | `[ManualMethodOverwrite]` prefix in `Fixes/WaterSourceStrengthFix.cs` advancing the fade by `ITickService.TickIntervalInSeconds`; service bound in `Plugin.cs`; new per-tick trace `Updating N water sources with hash` in `DesyncPatches.cs`. |
+| (working tree, 2026-09-16) | Fix off-map beavers / `IndexOutOfRangeException` in `SwimmingAnimator.ModelDepth` after a rehost or any second game in one process | `TimeTimePatcher.time` is static and only written through the `ticksSinceLoad` setter; a new `ReplayService` starts at 0 via its field initialiser, so the patched `Time.time` kept the previous game's value (402 ticks × 0.6 s) while `MovementAnimator.InitializeEntity` built the load-time path corners, then dropped to 0.6 s at tick 1 and `AnimatedPathFollower.PlaceBetweenCorners` extrapolated the model position by −113× (verified from the saves inside error-report-2026-09-16-21h25m33s.zip). | One line in `ReplayService.Reset()`: `TimeTimePatcher.SetTicksSinceLoaded(0)`. Static patcher state is reset by the `IResettableSingleton.Reset()` of the service that owns the tick counter. |
 
 Also instructive: `e0d465d` (save overflow, 4 lines in `DeterminismService.cs`), `cf2885e` (Steam overlay join dialog), `7787b1e`'s predecessor `37fc2a3`.
 
