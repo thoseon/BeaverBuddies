@@ -148,6 +148,10 @@ namespace BeaverBuddies
             // game's value until tick 1 and MovementAnimator would build its
             // load-time path corners from stale time (beavers fly off the map).
             TimeTimePatcher.SetTicksSinceLoaded(0);
+            // The per-tick Order/Move hashes are static running totals; without
+            // this a rehost continues from each side's previous game and the
+            // "Tick N IO done" lines of host and client can no longer be compared.
+            TEBPatcher.SetHashes(0, 0);
         }
 
         public ReplayService(
