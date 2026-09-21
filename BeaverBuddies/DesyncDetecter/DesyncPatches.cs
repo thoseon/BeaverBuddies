@@ -401,8 +401,10 @@ namespace BeaverBuddies.DesyncDetecter
         }
     }
 
-    // Instant nav mesh / district changes are applied per frame (LateUpdate),
-    // see Fixes/InstantNavMeshFix.cs. The position of this trace in the
+    // Instant nav mesh / district changes are applied at the start of each
+    // entity bucket in co-op, see Fixes/InstantNavMeshFix.cs. Only that call is
+    // traced: the vanilla per-frame call is skipped in co-op, and Harmony runs
+    // this prefix even when the original is skipped. The position of this trace in the
     // per-tick list must be identical on both sides; if it moves relative to
     // the "going to:" traces, one side's buckets saw the change earlier.
     [HarmonyPatch(typeof(NavigationSynchronizer), "ProcessInstantChanges")]
@@ -412,6 +414,7 @@ namespace BeaverBuddies.DesyncDetecter
         {
             if (!Settings.Debug) return;
             if (!ReplayService.IsLoaded) return;
+            if (!Fixes.InstantNavMeshSyncService.IsSynchronizing) return;
             var navMeshUpdater = __instance._navMeshUpdater;
             int terrain = navMeshUpdater._enqueuedInstantTerrainChanges.Count;
             int road = navMeshUpdater._enqueuedInstantRoadChanges.Count;

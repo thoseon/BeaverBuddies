@@ -30,12 +30,21 @@ namespace BeaverBuddies.Fixes
     /// per-frame LateUpdate can no longer change what gameplay sees. The call
     /// is cheap when the queues are empty. The LateUpdate itself is left
     /// alone so previews keep updating while the game is paused.
+    ///
+    /// In co-op the per-frame call must not apply instant changes at all:
+    /// otherwise changes queued after the last bucket of a tick are applied
+    /// before or after the next tick's replayed events depending on the frame,
+    /// and the desync trace lands at a machine-dependent position (seen as
+    /// false desyncs on 2026-09-21). InstantNavMeshPerFramePatcher therefore
+    /// skips ProcessInstantChanges unless Synchronize() is running.
     /// </summary>
     // ILoadableSingleton guarantees the game instantiates this service at scene
     // load even though nothing else depends on it.
     public class InstantNavMeshSyncService : RegisteredSingleton, ILoadableSingleton
     {
         private readonly NavigationSynchronizer _navigationSynchronizer;
+
+        public static bool IsSynchronizing { get; private set; }
 
         public InstantNavMeshSyncService(NavigationSynchronizer navigationSynchronizer)
         {
@@ -52,10 +61,38 @@ namespace BeaverBuddies.Fixes
                 ProcessInstantChanges();
                 NotifyAllNavmeshChanges();
             }
+            private void ProcessInstantChanges()
+            {
+                _navMeshUpdater.ProcessInstantChanges(_instantNavMeshUpdateBuilder);
+                _districtUpdater.ProcessInstantChanges(_instantNavMeshUpdateBuilder);
+            }
          */
         public void Synchronize()
         {
-            _navigationSynchronizer.LateUpdateSingleton();
+            IsSynchronizing = true;
+            try
+            {
+                _navigationSynchronizer.ProcessInstantChanges();
+                _navigationSynchronizer.NotifyAllNavmeshChanges();
+            }
+            finally
+            {
+                IsSynchronizing = false;
+            }
+        }
+    }
+
+    // Stops the per-frame LateUpdateSingleton (and anything else outside
+    // Synchronize) from applying instant changes during a co-op game. The
+    // game's own PostLoad call runs before ReplayService.IsLoaded and is kept.
+    [HarmonyPatch(typeof(NavigationSynchronizer), "ProcessInstantChanges")]
+    class InstantNavMeshPerFramePatcher
+    {
+        static bool Prefix()
+        {
+            if (EventIO.IsNull) return true;
+            if (!ReplayService.IsLoaded) return true;
+            return InstantNavMeshSyncService.IsSynchronizing;
         }
     }
 
