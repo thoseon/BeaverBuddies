@@ -142,6 +142,10 @@ namespace BeaverBuddies
             IsLoaded = false;
             IsReplayingEvents = false;
             isReset = true;
+            // The per-tick Order/Move hashes are static running totals; without
+            // this a rehost continues from each side's previous game and the
+            // "Tick N IO done" lines of host and client can no longer be compared.
+            TEBPatcher.SetHashes(0, 0);
         }
 
         public ReplayService(
